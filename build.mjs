@@ -12,7 +12,7 @@ const KEY = (process.env.TMDB_KEY || '').trim();
 if (!KEY) { console.error('TMDB_KEY is missing'); process.exit(1); }
 const BEARER = KEY.length > 40; // v4 read access token vs v3 api key
 const OUT = 'docs';
-const ROW_SIZE = 20;
+const ROW_SIZE = 300; // as complete as Stremio's own rows
 
 async function tmdb(path, params = {}) {
   const u = new URL('https://api.themoviedb.org/3' + path);
@@ -57,19 +57,24 @@ async function toMeta(m) {
     imdbRating: cm.imdbRating || undefined,
     genres: (d.genres || []).map(g => g.name),
     links: (cm.links || []).filter(l => l.category === 'imdb'),
+    behaviorHints: { defaultVideoId: imdb, hasScheduledVideos: false },
   };
 }
 
+/** Converts the list, 6 films at a time, keeping its order. */
 async function metasFor(list) {
-  const out = [];
-  for (const m of list) {
-    if (out.length >= ROW_SIZE) break;
-    try {
-      const meta = await toMeta(m);
-      if (meta && !out.some(x => x.id === meta.id)) out.push(meta);
-    } catch (e) { console.warn(String(e)); }
+  const todo = list.slice(0, ROW_SIZE);
+  const res = new Array(todo.length);
+  let next = 0;
+  async function worker() {
+    while (next < todo.length) {
+      const i = next++;
+      try { res[i] = await toMeta(todo[i]); } catch (e) { console.warn(String(e)); }
+    }
   }
-  return out;
+  await Promise.all(Array.from({ length: 6 }, worker));
+  const seen = new Set();
+  return res.filter(m => m && !seen.has(m.id) && seen.add(m.id));
 }
 
 async function pages(path, params, n) {
@@ -87,7 +92,7 @@ async function cinema() {
   // Only real new releases: out in the last 70 days (TMDB's list also has re-releases of old films),
   // and with a title in a Latin alphabet (some films have no French title yet).
   const since = new Date(Date.now() - 70 * 86400000).toISOString().slice(0, 10);
-  const playing = (await pages('/movie/now_playing', { language: 'fr-FR', region: 'FR' }, 5))
+  const playing = (await pages('/movie/now_playing', { language: 'fr-FR', region: 'FR' }, 20))
     .filter(m => (m.release_date || '') >= since && /[A-Za-zÀ-ÿ]/.test(m.title || ''));
   playing.sort((a, b) => b.popularity - a.popularity);
   // Stremio's own "Popular" films first (same idea as its home screen), matched by IMDb id after conversion.
@@ -96,7 +101,7 @@ async function cinema() {
     const cm = await json('https://v3-cinemeta.strem.io/catalog/movie/top.json');
     stremioTop = new Set((cm.metas || []).map(x => x.imdb_id || x.id));
   } catch (e) { console.warn('cinemeta: ' + e); }
-  const metas = await metasFor(playing.slice(0, 40));
+  const metas = await metasFor(playing);
   metas.sort((a, b) => (stremioTop.has(b.id) ? 1 : 0) - (stremioTop.has(a.id) ? 1 : 0));
   console.log(`au cinéma: ${metas.length} films (${metas.filter(m => stremioTop.has(m.id)).length} aussi populaires sur Stremio)`);
   return metas;
@@ -113,7 +118,7 @@ function dailyShuffle(arr) {
 }
 
 async function classics() {
-  const top = await pages('/movie/top_rated', { language: 'fr-FR' }, 10);
+  const top = await pages('/movie/top_rated', { language: 'fr-FR' }, 30);
   // Classics: at least 10 years old, very well rated by many people.
   const before = new Date(Date.now() - 10 * 365 * 86400000).toISOString().slice(0, 10);
   const good = top.filter(m => m.vote_count >= 3000 && m.vote_average >= 8.0 && (m.release_date || '9') < before);
