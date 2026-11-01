@@ -2,7 +2,7 @@
   "id": "com.alexandre.recos",
   "version": "1.0.20758",
   "name": "Recos Alexandre",
-  "description": "Au cinéma et classiques à rattraper. Données TMDB, mises à jour chaque nuit.",
+  "description": "Au cinéma, classiques à rattraper, guerre & histoire. Données TMDB, mises à jour chaque nuit.",
   "resources": [
     "catalog"
   ],
@@ -22,6 +22,11 @@
       "type": "movie",
       "id": "classiques",
       "name": "Classiques à rattraper"
+    },
+    {
+      "type": "movie",
+      "id": "guerre-histoire",
+      "name": "Guerre & Histoire"
     }
   ],
   "behaviorHints": {
