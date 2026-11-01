@@ -1,0 +1,31 @@
+{
+  "id": "com.alexandre.recos",
+  "version": "1.0.20758",
+  "name": "Recos Alexandre",
+  "description": "Au cinéma et classiques à rattraper. Données TMDB, mises à jour chaque nuit.",
+  "resources": [
+    "catalog"
+  ],
+  "types": [
+    "movie"
+  ],
+  "idPrefixes": [
+    "tt"
+  ],
+  "catalogs": [
+    {
+      "type": "movie",
+      "id": "au-cinema",
+      "name": "Au cinéma"
+    },
+    {
+      "type": "movie",
+      "id": "classiques",
+      "name": "Classiques à rattraper"
+    }
+  ],
+  "behaviorHints": {
+    "configurable": false,
+    "configurationRequired": false
+  }
+}
