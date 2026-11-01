@@ -38,16 +38,25 @@ async function toMeta(m) {
   const d = await tmdb(`/movie/${m.id}`, { language: 'fr-FR', append_to_response: 'external_ids' });
   const imdb = d.imdb_id || d.external_ids?.imdb_id;
   if (!imdb || !imdb.startsWith('tt')) return null;
+  // Same details line as Stremio's own rows (duration, year, IMDb rating): taken from Cinemeta, Stremio's
+  // official catalogue, which has the real IMDb rating (TMDB only has its own).
+  let cm = {};
+  try { cm = (await json(`https://v3-cinemeta.strem.io/meta/movie/${imdb}.json`)).meta || {}; }
+  catch (e) { console.warn(`cinemeta ${imdb}: ${e}`); }
   return {
     id: imdb,
     type: 'movie',
     name: d.title || m.title,
     poster: d.poster_path ? `https://image.tmdb.org/t/p/w342${d.poster_path}` : `https://images.metahub.space/poster/medium/${imdb}/img`,
     posterShape: 'poster',
-    background: d.backdrop_path ? `https://image.tmdb.org/t/p/w1280${d.backdrop_path}` : undefined,
-    description: d.overview || undefined,
-    releaseInfo: (d.release_date || '').slice(0, 4) || undefined,
+    background: d.backdrop_path ? `https://image.tmdb.org/t/p/w1280${d.backdrop_path}` : cm.background,
+    logo: cm.logo,
+    description: d.overview || cm.description,
+    releaseInfo: cm.releaseInfo || (d.release_date || '').slice(0, 4) || undefined,
+    runtime: cm.runtime || (d.runtime ? `${d.runtime} min` : undefined),
+    imdbRating: cm.imdbRating || undefined,
     genres: (d.genres || []).map(g => g.name),
+    links: (cm.links || []).filter(l => l.category === 'imdb'),
   };
 }
 
