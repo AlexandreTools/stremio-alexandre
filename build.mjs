@@ -3,6 +3,7 @@
 //   - "Au cinéma": films showing in French cinemas now (TMDB now_playing, region FR),
 //     the ones Stremio's own "Popular" catalogue also lists first, then the most popular others.
 //   - "Classiques à rattraper": very well rated films with lots of votes (TMDB top rated), a fresh pick each day.
+//   - "Guerre & Histoire": the best rated war and history films (TMDB discover).
 // Run: TMDB_KEY=... node build.mjs   (v3 API key or v4 read access token). No dependencies (Node 20+).
 // Data and images: TMDB (https://www.themoviedb.org). This product uses the TMDB API but is not endorsed
 // or certified by TMDB.
@@ -121,9 +122,21 @@ async function classics() {
   const top = await pages('/movie/top_rated', { language: 'fr-FR' }, 30);
   // Classics: at least 10 years old, very well rated by many people.
   const before = new Date(Date.now() - 10 * 365 * 86400000).toISOString().slice(0, 10);
-  const good = top.filter(m => m.vote_count >= 3000 && m.vote_average >= 8.0 && (m.release_date || '9') < before);
+  const good = top.filter(m => m.vote_count >= 2000 && m.vote_average >= 7.8 && (m.release_date || '9') < before);
   const metas = await metasFor(dailyShuffle(good));
   console.log(`classiques: ${metas.length} films (parmi ${good.length})`);
+  return metas;
+}
+
+// ---------------------------------------------------------------- Guerre & Histoire
+async function warHistory() {
+  // TMDB genres 10752 = Guerre, 36 = Histoire. Well rated films with enough votes, best first.
+  const list = await pages('/discover/movie', {
+    language: 'fr-FR', with_genres: '10752|36', sort_by: 'vote_average.desc',
+    'vote_count.gte': '800', 'vote_average.gte': '7', include_adult: 'false',
+  }, 15);
+  const metas = await metasFor(list);
+  console.log(`guerre & histoire: ${metas.length} films`);
   return metas;
 }
 
@@ -131,13 +144,14 @@ async function classics() {
 const catalogs = [
   { type: 'movie', id: 'au-cinema', name: 'Au cinéma', build: cinema },
   { type: 'movie', id: 'classiques', name: 'Classiques à rattraper', build: classics },
+  { type: 'movie', id: 'guerre-histoire', name: 'Guerre & Histoire', build: warHistory },
 ];
 
 const manifest = {
   id: 'com.alexandre.recos',
   version: '1.0.' + Math.floor(Date.now() / 86400000),
   name: 'Recos Alexandre',
-  description: 'Au cinéma et classiques à rattraper. Données TMDB, mises à jour chaque nuit.',
+  description: 'Au cinéma, classiques à rattraper, guerre & histoire. Données TMDB, mises à jour chaque nuit.',
   resources: ['catalog'],
   types: ['movie'],
   idPrefixes: ['tt'],
