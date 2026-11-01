@@ -75,7 +75,11 @@ async function pages(path, params, n) {
 
 // ---------------------------------------------------------------- Au cinéma
 async function cinema() {
-  const playing = await pages('/movie/now_playing', { language: 'fr-FR', region: 'FR' }, 3);
+  // Only real new releases: out in the last 70 days (TMDB's list also has re-releases of old films),
+  // and with a title in a Latin alphabet (some films have no French title yet).
+  const since = new Date(Date.now() - 70 * 86400000).toISOString().slice(0, 10);
+  const playing = (await pages('/movie/now_playing', { language: 'fr-FR', region: 'FR' }, 5))
+    .filter(m => (m.release_date || '') >= since && /[A-Za-zÀ-ÿ]/.test(m.title || ''));
   playing.sort((a, b) => b.popularity - a.popularity);
   // Stremio's own "Popular" films first (same idea as its home screen), matched by IMDb id after conversion.
   let stremioTop = new Set();
@@ -101,7 +105,9 @@ function dailyShuffle(arr) {
 
 async function classics() {
   const top = await pages('/movie/top_rated', { language: 'fr-FR' }, 10);
-  const good = top.filter(m => m.vote_count >= 3000 && m.vote_average >= 8.0);
+  // Classics: at least 10 years old, very well rated by many people.
+  const before = new Date(Date.now() - 10 * 365 * 86400000).toISOString().slice(0, 10);
+  const good = top.filter(m => m.vote_count >= 3000 && m.vote_average >= 8.0 && (m.release_date || '9') < before);
   const metas = await metasFor(dailyShuffle(good));
   console.log(`classiques: ${metas.length} films (parmi ${good.length})`);
   return metas;

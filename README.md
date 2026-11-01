@@ -2,8 +2,8 @@
 
 Deux rangées pour l'accueil de Stremio, mises à jour chaque nuit par GitHub Actions et servies par GitHub Pages :
 
-- **Au cinéma** : les films à l'affiche en France (ceux que Stremio met aussi en « Populaires » d'abord).
-- **Classiques à rattraper** : films très bien notés (≥ 8/10, ≥ 3 000 votes sur TMDB), une nouvelle sélection chaque jour.
+- **Au cinéma** : les films sortis en salle en France ces 10 dernières semaines (ceux que Stremio met aussi en « Populaires » d'abord).
+- **Classiques à rattraper** : films de plus de 10 ans très bien notés (≥ 8/10, ≥ 3 000 votes sur TMDB), une nouvelle sélection chaque jour.
 
 Installation dans Stremio : ajouter l'add-on avec l'adresse `https://alexandretools.github.io/stremio-alexandre/manifest.json`.
 
